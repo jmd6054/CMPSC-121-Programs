@@ -1,0 +1,132 @@
+@@ -0,0 +1,131 @@
+//John Michael DiDonato
+//January 23, 2014
+//Homework 1
+
+//The purpose of this program is to help the angry birds fight the evil pigs. This program
+//will help by providing the pigs with important information on the height of which they
+//should release rocks. Because the pigs fortified their defenses the angry birds cannot
+//fly directly above the pigs' encampment and drop rocks so they must release while flying
+//towards the pigs' encampment. By releaseing their rocks while flying the rocks will carry
+//on with the same velocity in the horizontal direction as the horizontal velocity of the 
+//flying birds. The rocks will then fall with an acceleration due to the gravitational force
+//of the planet. An initial test will allow for the value of g and the airspeed
+//(horizontal) velocity to be found. From that information as well as a second test that
+// will calculate the maxium distance from the encampent that the rocks can be released
+//due to the constraint of a max height of 1000 meters, the correct height to release rocks
+//from any height will be calculated
+
+//important equations that will be used:
+
+// for horizontal motion where there is constant velocity
+//	x = v * t where x is horizontal displacement, v is horizontal velocity, and t is time
+
+//for vertical motion where there is a constant acceleration
+// y = (v * t) - (.5 * g * t * t)
+//where y is vertical displacemnt, t is time, g is gravitation acceration, v is inital vertical
+//velocity
+
+#include <iostream>
+#include <iomanip>
+using namespace std;
+
+int main()
+{
+	//declare variables
+	const double HEIGHT_TEST = 10;					// height given for step 1
+	const double MAX_HEIGHT = 1000;					// height given for step 2
+	const double INITIAL_VERTICAL_VELOCITY = 0;		//when inititally droped the veritcal velocity is 0
+	double timeTest;									
+	double distanceTest;
+	double horizontalVelocity;
+	double gravity;
+	double timeTwo;									//time calculated in step 2
+	double maxDistance;
+	double distanceFinal;
+	double timeFinal;
+	double heightFinal;
+
+	double treeProximity;
+	double treeHeight;
+	double treeTimeSquare;
+	double treeTime;
+	double treeDistance;
+	double tree_distance_in_perimeter;
+
+	//initial test
+	//ask for input
+	cout << "How far (in meters) did the rock fly when dropped from a height of 10 meters?"
+		<< endl; //ask user for the distance traveled by rock when droped from 10 meters;
+	cin >> distanceTest; //user input for test distance
+	cout << endl << "How much time (in seconds) did the rock take to get the pig's camp" << endl
+		<< "when dropped from a height of 10 meters?" << endl; //ask user for time of test
+	cin >> timeTest; //user input for time of test
+
+	//calculate g
+	// the equation for gravity was derived from the given equation seen above on line 23
+	gravity = ((2*((INITIAL_VERTICAL_VELOCITY * timeTest) - HEIGHT_TEST)) / (timeTest * timeTest));
+	
+	//calculate horizontal velocity
+	//the horizontal velocity is the same thing as the airspeed velocity
+    //the equation was derived from equation on line 20
+	horizontalVelocity = distanceTest / timeTest;
+
+	//calculate the time it takes for a rock to fall from 1000 meters
+	//in order to calculate this time solve the vertical motion
+	//where there is a constant acceleration equation using 1000 meters in terms of the time
+	//in test one
+	//20 = timeTest^2, 2000 = timeTwo^2 -> 100 * timeTest^2 = timeTwo^2 --> 10*timeTest = timeTwo
+	timeTwo = 10 * timeTest; 
+
+	//determine max horizontal displacement from camp
+	maxDistance = horizontalVelocity * timeTwo;
+
+	//output the max distance
+	cout << endl << "The maxiumum range from " << MAX_HEIGHT << " meters will be " << maxDistance << " meters." << endl << endl;
+	
+	//ask user for horizontal displacment from camp that is less than max
+	cout << "The angry birds are finally ready to attack!" << endl 
+		<< "What is distance from the actual target?" << endl << 
+		"(Remember that the distance must be less than the max distance of " 
+		<< maxDistance << " meters)" << endl;
+	cin >> distanceFinal; //user input for the distance from the actual targert
+
+	//calculate the time it took for the rock to travel the distance given
+	timeFinal = distanceFinal / horizontalVelocity;
+
+	//Calculate the height needed for the rock to travel the given distance
+	heightFinal = (INITIAL_VERTICAL_VELOCITY * timeFinal) - (.5 * gravity * timeFinal * timeFinal);
+
+	//output the height calculated
+	cout << endl << "The angry birds will have to fly at a height of " << 
+		fixed << setprecision(2) << heightFinal << endl
+		<< "meters to hit the target accurately" << endl;
+
+	//Extra Credit
+	//Purpose is to discover how far into the pigs' perimeter can a rock land when released from a tree
+	//where the user selects the distance from the safe drop and the height of the tree
+	//ask user for tree location and height
+	cout << endl << "To help the weaker flies fight the pigs lets pick a tree" << endl <<
+		"where they can drop their rocks." << endl << endl << "Pick a distance within 10 meters of the safe" 
+		<< endl<< "point to be the location of the tree" << endl;
+	cin >> treeProximity;
+	cout << endl << "Now pick a height for the tree thats less than 100 meters" << endl;
+	cin >> treeHeight;
+
+	//calculate time for the rock to fall from the tree
+	treeTimeSquare = ((-2 * treeHeight) / gravity); // calculate the sqaured value of time using given equations
+	treeTime = sqrt(treeTimeSquare);  //square root the sqaured value in order to get the time it took to reach ground
+
+	//calculate the distance the rock can travel horizontally
+	treeDistance = horizontalVelocity * treeTime;
+
+	//calculate the distance inside pigs perimeter
+	tree_distance_in_perimeter = treeDistance - treeProximity; 
+
+	//output the distance inside pigs perimeter
+	cout << endl << "The rocks from the trees made it " << fixed << setprecision(2) << tree_distance_in_perimeter << " meters inside the pigs' perimeter" << endl;
+
+	return 0;
+}
+
+
