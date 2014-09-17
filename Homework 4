@@ -1,0 +1,396 @@
+@@ -0,0 +1,395 @@
+//John Michael DiDonato
+//CMPSC 121 Section 2
+//Homework 4
+//21 March 2014
+
+//Program Description:
+//This program simulates the game of Farkle
+//On each turn, the player begins by rolling six dice, and then chooses to 
+//preserve one or more of the dice for a score, and possibly choosing to roll 
+//the remaining dice for additional points. If at any time, the newly rolled 
+//dice have no score available, the player turn ends with all points for that
+//turn lost. The program ensures that when a player does select dice to score
+//that each dice is scored. It will prompt the user to reselect from the 
+//rolled dice available if not all dice selected will be scored. When a player
+//decides to end their turn they will be prompted to take another turn or 
+//not. (The scoring amounts for dice combinations were given)
+
+#include <iostream>
+#include <iomanip>	
+using namespace std;
+
+//The Functions belowed are declared and will be defined and used later on
+//in the program
+int rollDie();
+void convertInput(int, int[], int&);
+bool scoreable(const int[], int[]);
+bool hasStraight(const int[]);
+bool hasThreePair(const int[]);
+void scoreDice(const int[], bool&, int&);
+
+//The constant variables declared and initialzed below will be used in the 
+//program and can be changed for future games that have variations on the scoring
+const int ONE_SCORE = 100;
+const int FIVE_SCORE = 50;
+const int THREE_ALIKE_ONES_SCORE = 1000;
+const int THREE_ALIKE_OTHER_MULTIPLER = 100;
+const int STRAIGHT_SCORE = 1000;
+const int THREE_PAIR_SCORE = 500;
+
+int main()
+{
+
+	int diceRolled[7];		//array variable holds dice rolled values
+	int diceSelected[10];	//array variable that holds the values for the dice selected
+	int selection;			//the user input of which dice are selected to be scored
+	int number_of_dice_selected; //the number of dice selected
+	int number_of_dice;		//the number of dice available to roll
+	int totalScore = 0;		//cumulative score throughout all turns of the game
+	int rollScore;			//roll score
+	int turnScore;
+
+	bool turnAgainCheck;	//determines whether there will be another turn
+	char turnAgain;			//evulates input to whether another turn will occur
+	bool rollAgainCheck;	//determines whether turn will continue i.e. another roll
+	char rollAgain;			//evulates input to whether turn will continue i.e. another roll
+		
+	bool checkUse;			//determines whether all selected dice will be scored or not				
+	bool scoreableCheck;	//determines if values rolled are scoreable
+
+do //turn begins
+{
+	turnAgainCheck = true; //default that another turn will occur
+	rollAgainCheck = true; //default that another roll will occur
+	scoreableCheck = true;
+	number_of_dice = 6;
+	rollScore = 0;
+	turnScore = 0;
+
+	cout << "The turn begins..." << endl; //output indicating a new turn
+
+	while(rollAgainCheck == true)
+	{
+	for(int i = 1; i < 7; i++) //fills diceRolled with empty values
+		diceRolled[i] = 0;
+
+	cout << "Rolling " << number_of_dice << ":"; 
+
+	//output indicates that a specific number of dice will be rolled
+	//and then oupits the dice rolled
+	for(int i = 1; i < (number_of_dice + 1); i++)
+	{
+		int roll = rollDie(); //calls function to get random number
+
+		cout << setw(3) << roll; //outputs the values for each dice rolled
+		diceRolled[roll]++;		//fills array correctly based on dice values rolled
+	} //end of for
+	
+	if(scoreable(diceRolled) == false) //if the diceRolled cannot be scored
+	{
+		turnScore = 0; //player loses all points for the turn
+		cout << endl << "There is no way to score. Turn end!" << endl;
+		cout << "You earned " << turnScore <<" points on that turn. Total = " << totalScore << endl;
+		scoreableCheck = false; //the player's turn ends and they cannot roll again
+		rollAgainCheck = false;
+	} //end of if statement that checks if rolled dice are scoreable
+
+	if(scoreableCheck == true)
+	{
+		cout << endl << "Please enter the dice you wish to score, with NO spaces:   ";
+		cin >> selection; //input becomes selection
+
+		//calls convertInput function
+		convertInput(selection, diceSelected, number_of_dice_selected);
+
+		for (int i = 1; (i < 7); i++) //this for function check if input is correct
+		{
+			//if statement checks if a value in diceSelected is greater than value for same element in dice rolled
+			//or if number of dice selected is greater than number of dice rolled
+			//if these things are true then the user input is incorrect and user must enter new input
+			if (diceSelected[i] > 0 && diceSelected[i] > diceRolled[i] || number_of_dice_selected > number_of_dice)
+			 {
+				cout << endl << "The dice selected were not valid.";
+				cout << endl << "Please enter valid dice you wish to score, with NO spces:   ";
+
+				cin >> selection;
+				convertInput(selection, diceSelected, number_of_dice_selected);
+				i = 1; //the valuue of i returns to 1 so the for loop can recheck all values
+			}
+		} //end of for
+
+		scoreDice(diceSelected, checkUse, rollScore);
+		
+		while(checkUse == false)
+		{
+		
+		cout << endl << "Not all of the dice selected will be scored.";
+		cout << endl << "Please enter a combination of dice where all the dice selected will be scored.";
+		cout << endl << "Please enter these dice, with NO spaces:   ";
+
+		cin >> selection; //input becomes selection
+		
+		convertInput(selection, diceSelected, number_of_dice_selected);
+
+		for (int i = 1; (i < 7); i++) //this for function check if input is correct
+		{
+			//if statement checks if a value in diceSelected is greater than value for same element in dice rolled
+			//or if number of dice selected is greater than number of dice rolled
+			//if these things are true then the user input is incorrect and user must enter new input
+			if (diceSelected[i] > 0 && diceSelected[i] > diceRolled[i] || number_of_dice_selected > number_of_dice)
+			 {
+				cout << endl << "The dice selected were not valid.";
+				cout << endl << "Please enter valid dice you wish to score, with NO spces:   ";
+
+				cin >> selection;
+				convertInput(selection, diceSelected, number_of_dice_selected);
+				i = 1; //the valuue of i returns to 1 so the for loop can recheck all values
+			}
+		} //end of for
+
+		scoreDice(diceSelected, checkUse, rollScore); //checks whether changes in input make checkUse valid
+		
+		} //end of while loop; loop ends when checkUse == true
+
+		turnScore = turnScore + rollScore; //adds rollscore to turnScore
+		
+		
+		cout << "Score so far this turn: " << turnScore; //outputs the score for the turn
+
+		number_of_dice = number_of_dice - number_of_dice_selected; //calculates the remaining number of dice left to throw
+
+		if(number_of_dice == 0) //This situation where a player scored on every single one of their dice is called HOT DICE
+			number_of_dice = 6; //the player then receives 6 dice back
+
+		cout << endl << "You may continue, rolling " << number_of_dice << " dice. ";
+		cout << "Do so (y/n)?  ";
+		cin >> rollAgain;
+
+		if(rollAgain == 'n')
+			rollAgainCheck = false;
+
+	} //end of if Statement;
+	} //end of while loop- this loops ends when rollAgainCheck == false
+
+	if(scoreable(diceRolled) == true)
+	{
+		totalScore = totalScore + turnScore; //adds turn score to totalScore
+		cout << "You earned " << turnScore <<" points on that turn. Total = " << totalScore << endl;
+	}
+
+	cout << endl << "Play another turn (y/n)?  ";
+	cin >> turnAgain;
+
+	if(turnAgain == 'n')
+		turnAgainCheck = false;
+
+} while(turnAgainCheck == true); //end of do-while
+
+return 0;
+} //end of main
+
+int rollDie() //function automatically returns a random number between 1-6
+{             //function simulates rolling a dice
+	int randomRoll;
+	randomRoll = rand() % 6 + 1;
+	return randomRoll;
+} //end of rollDie
+
+bool scoreable(const int dice[], int comboList[]) 
+{
+	bool scoreableCheck; //checks if dice rolled is scorable or not
+
+	bool fiveCheck;		//check if there are more than one five
+	if(dice[5] > 0)
+	{
+		fiveCheck = true;
+		for(int i = 0; i < dice[5]; i++)
+		{
+			comboList[i] = 5
+		}
+	}
+	else fiveCheck = false;
+
+	bool oneCheck;		//checks if more than one one
+	if(dice[1] > 0)
+		oneCheck = true;
+	else oneCheck = false;
+
+	bool otherCheck;	//checks if dice rolled 3 or more of another value besides 1 and 5
+	if((dice[2] >= 3 || dice[3] >=3 || dice[4] >= 3 || dice[6] >= 3))
+		otherCheck = true;
+	else otherCheck = false;
+
+	//if all the checks are false, then it is not scoreable(i.e scoreableCheck = false;)
+	if((fiveCheck == false && oneCheck == false && otherCheck == false && hasStraight(dice) == false && hasThreePair(dice) == false))
+		 scoreableCheck = false;
+	else scoreableCheck = true; //the diceRolled are scorable
+
+	return scoreableCheck; //returns boolean value for scoreable
+
+} //end of scoreable
+
+bool hasStraight(const int diceStraight[]) //checks if dice rolled has straight(i.e. one of each kind)
+{
+	bool hasStraightCheck = true; //default is set as true
+
+	for(int i = 1; i < 7; i++)
+	{
+		if(diceStraight[i] != 1) //if value in any element of array is not one
+			hasStraightCheck = false; //there is no straight(i.e. set as false)
+	}
+
+	return hasStraightCheck;
+} //end of hasStraight
+
+//checks if rolled dice has three of a pair
+bool hasThreePair(const int diceThreePair[]) 
+{
+	bool hasThreePairCheck = false; //default set as false
+	int pairCounter = 0;
+
+	//goes through all values in array; if an element has value of 2; +1 is added to pair counter
+	//if pair counter == 3 then there is a three pair and value is set as true
+	for(int i = 1; i < 7; i++)
+	{
+		if(diceThreePair[i] == 2)
+		pairCounter++;
+	}
+
+	if(pairCounter == 3)
+		bool hasThreePairCheck = true;
+
+	return hasThreePairCheck;
+} //end of hasThreePair
+
+//this function takes the user inputs, assesses it to read which die the user
+//actually selected and then fills a new array with the values given by the user
+void convertInput(int userInput, int diceSelectedArray[], int &digits )
+{
+	digits = 0; //number of dice selected
+
+	for(int i = 1; i < 10; i++) //fill elements of array with zero values
+		diceSelectedArray[i] = 0;
+
+	//loop breaks user input into die values then fills the new array with those values
+	//it then modifies the user input to remove the die value just assisnged to the new
+	//array and continues on the process until the userinput is nothing
+	//it also keeps track of how any die were thrown in total
+	for(int i = 1; userInput > 0; i++) 
+	{                                 
+		diceSelectedArray[userInput % 10]++;
+		userInput = userInput / 10;
+		digits++; //number of digits in the user response == number of dice selected
+	} // end of for
+} //end of converInput
+
+//this function takes the dice that have been selected from an array that has
+//been made and calculates the scoring of those dice. if not all dice are scored
+//then this function will be able to tell
+void scoreDice(const int dice_score_array[], bool& check_all_dice_used, int& score)
+{
+	score = 0;
+	int scoredDice = 0;
+	int number_of_dice = 0;
+	
+	//for loop calculates number of dice selected
+	for(int i = 1; i < 7; i++)
+	{
+		number_of_dice = number_of_dice + dice_score_array[i];
+	}
+
+	//checks if there is a straight, if so gives score
+	if (hasStraight(dice_score_array) == true)
+	{
+		score = STRAIGHT_SCORE;
+		scoredDice = 6; //all 6 dice scored
+	}
+
+	//checks if ther is a three pair, if so gives score
+	if(hasThreePair(dice_score_array) == true)
+	{
+		score = THREE_PAIR_SCORE;
+		scoredDice = 6; //all 6 dice scored
+	}
+
+//this if statement checks if there was a straight or three pair
+//if neither occured then other scoring options are in play
+if(hasStraight(dice_score_array) == false && hasThreePair(dice_score_array) == false)
+{
+	//this for statement sees if there is either 1 or 2 ones selected
+	//if so it calculates the score to add to the rollscore and also
+	//keeps track of the number of dice that have been scored
+	for(int i = 1; i < 3; i++)
+	{
+		if(dice_score_array[1] == i)
+		{
+			score = score + (i * ONE_SCORE);
+			scoredDice = scoredDice + i;
+		}
+	} //end of for
+
+	//does same thing for 5s that was done for 1s in the function above
+	for(int i = 1; i < 3; i++)
+	{
+		if(dice_score_array[5] == i)
+		{
+			score = score + (i * FIVE_SCORE);
+			scoredDice = scoredDice + i;
+		}
+	}
+
+	//this code blow calculates the score if the 1 die was selected three or more times
+	int j;
+	for(int i = 3; i < 7; i++)
+	{
+		//based on the value of i(i.e. how many alike number 1s there are), the multiplier j is found
+		if(i == 3)
+			j = 1;
+		if(i == 4);
+			j = 2;
+		if(i == 5)
+			j = 4;
+		if(i == 6)
+			j = 8;
+
+		if(dice_score_array[1] == i)
+		{
+			score = score + (j * THREE_ALIKE_ONES_SCORE);
+			scoredDice = scoredDice + i;
+		}
+	} //end of for statement for three or more 1s
+
+	//this code blow calculates the score if non-1 dies were selected three or more times
+	int n;
+	for(int i = 2; i < 7; i++) //for statement goes through array elements 2-6
+	{
+		for ( int m = 3; m < 7; m++) //for statement goes through the values in those elements of the array
+		{
+			//based on the value of m(i.e. how many alike number non-1 dies there are), the multiplier n is found
+			if(m == 3)
+				n = 1;
+			if(m == 4)
+				n = 2;
+			if(m == 5)
+				n = 4;
+			if(m == 6)
+				n = 8;
+
+
+			if(dice_score_array[i] == m)
+			{
+				score = score + (i * THREE_ALIKE_OTHER_MULTIPLER * n);
+				scoredDice = scoredDice + m;
+			}
+		}
+	} // end of for statement for three or more non-1 numbers
+}// end of if statment that sees if there was a straight or three pair
+
+
+	if(scoredDice == number_of_dice)
+		check_all_dice_used = true;
+	else
+		check_all_dice_used = false;
+
+}
+
