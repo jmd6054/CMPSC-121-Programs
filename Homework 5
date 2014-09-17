@@ -1,0 +1,316 @@
+@@ -0,0 +1,315 @@
+//John Michael DiDonato
+//Homework 5 - Old Maid
+//4/10/2014
+//CMPSC 121 Section 2
+
+//Program Description:
+//This program is the game Old maid; a shuffled deck with a single queen removed from it is alloted as evenly as possible to the number of players; every pair a player has
+//(that is two of the same kind of card) those cards are removed from the players hand and are gone for the rest of the game. each player
+//takes a card from the next player (meaning that each player also has a card removed from their hands by another player); when a player draws a card 
+//they check whether they have any new pairs and if so dicards them. This continues until a player has no cards left (either someone else takes their last
+//card or they draw a card and they have a match and are able to get rid of all their cards). If a player has no cards, they are a winner. The sole loser
+//of the game is the player who has a queen that could not be matched with any othe card ( because a queen was removed from the deck orginally); they
+//are the last remaining person to still have any cards
+
+#include <iostream>
+using namespace std;
+
+void shuffleDeck(int shuffle[]) //this function randomly shuffles card by taking everycard and swapping it with some random card in the deck
+{
+	for(int i = 0; i < 51; i++)
+	{
+		int randomPosition = rand() % 51;
+		swap(shuffle[i], shuffle[randomPosition]);
+	}
+} 
+void removePlayer(int arr[][28], int player, int& num_of_players, bool& userCheck)
+{
+	if(player == 0 && userCheck == true)
+	{
+		cout << endl << "You have no cards!  A winner!" << endl;
+		userCheck = false;
+	}
+
+	while((player + 1) < num_of_players) //player + 1 because if last row of array is all negative dont have swap with any to keep order
+	{
+		swap(arr[player], arr[player + 1]);
+		player++;
+	}
+
+	num_of_players = num_of_players - 1;
+}
+
+void resetHand(int hand[][28], int playerNumber)
+{
+	int backwardsCounter = 0; //this is the position in array where the hand ends i.e. where the cards stop
+	int handEndPosition;
+
+	for(int j = 27; hand[playerNumber][j] <= 0; j--) //reason for counting backwards is that initally the numbers are
+	{                                                //messed around but there are defintely 0s at the end
+			backwardsCounter++;
+	}
+
+	handEndPosition = 27 - backwardsCounter;          //finds the position of where to start
+
+	for(int j = 0; j <= handEndPosition; j++)
+	{
+		while(hand[playerNumber][handEndPosition] == (-1)) //keeps checking for -1 and moves position accordingly
+			handEndPosition--;
+
+		if(hand[playerNumber][j] == (-1))
+		{
+			swap(hand[playerNumber][j], hand[playerNumber][handEndPosition]); //swaps -1 when found and swaps with number in position after the final real card number
+		}
+
+		while(hand[playerNumber][handEndPosition] == (-1)) //keeps checking for -1 and movies position accordinly
+			handEndPosition--;
+	}
+
+}
+
+void checkPairs(int pairs[][28], int number_of_players)  // this function check for pairs and them marks them -1
+{
+
+	for(int i = 0; i < number_of_players; i++) //goes through all players and their cards and checks for pairs
+	{
+		for(int j = 0; j < 27; j++)
+		{
+
+			for(int m = 1; m < (28 - j); m++) //great for statment that loops and continues decreases in the times it checks based on position within array[][]
+			{
+				if ((pairs[i][j] == pairs[i][j+m]) && pairs[i][j] > 0 && pairs[i][j+m] > 0)
+				{
+					pairs[i][j] = -1;
+					pairs[i][j+m] = -1;
+				}
+			}
+		}
+
+		resetHand(pairs, i); //resets hand so the pairs are changed to negative one and the none removed cards are in the front of the array
+	}
+
+}
+
+void cardPrint(int card)
+{                                         //outputs words based on their values
+	switch(card)
+	{
+	case 1: cout << "Ace  ";
+		break;
+
+	case 2: cout << "Two  ";
+		break;
+
+	case 3: cout << "Three  ";
+		break;
+
+	case 4: cout << "Four  ";
+		break;
+
+	case 5: cout << "Five  ";
+		break;
+
+	case 6: cout << "Six  ";
+		break;
+
+	case 7: cout << "Seven  ";
+		break;
+
+	case 8: cout << "Eight  ";
+		break;
+
+	case 9: cout << "Nine  ";
+		break;
+
+	case 10: cout << "Ten  ";
+		break;
+
+	case 11: cout << "Jack  ";
+		break;
+
+	case 12: cout << "King  ";
+		break;
+
+	case 13: cout << "Queen  ";
+		break;
+	}
+}
+
+int handCount(const int countArray[][28], int nextPlayer) //counts how many cards a player holds(numbers that not 0 or -1)
+{
+	int cardCount = 1;
+
+	for(int j = 1; countArray[nextPlayer][j] > 0; j++)
+		cardCount = cardCount + 1;
+
+	return cardCount;
+
+}
+
+void cardTransfer(int transfer[][28], int player, int input, int numberPlayers, bool check)
+{
+	int endposition = 1;
+	for(int j = 0; transfer[player][j] > 0; j++)   //this for loop figues out how many positions(starting from 0)
+	{                                          // does actual card numbers(not -1 or 0s) have
+		endposition++;                         //variable endposition holds this value
+	}
+
+	if(player == (numberPlayers - 1))             //this if statment is designed for the last player, and they must select a card from the begining player
+	{
+		transfer[player][endposition] = transfer[0][input]; //because the user is always the first player and whenever the first player wins or loses the game is over
+		if(check == true)
+		{
+		cout << "A computer takes your ";     //this setup is appropiate
+		cardPrint(transfer[0][input]);                  //tells user what card was selected
+		cout << endl;
+		}
+		transfer[0][input] = -1;                       //places a -1 in the spot where the card was taken
+	}
+	else //this else statment is for all players that are not that last one as the player they get the card from is just he next person
+	{
+		transfer[player][endposition] = transfer[player + 1][input];
+		if(player == 0 && check == true)
+		{
+			cout << "You draw a(n) ";
+			cardPrint(transfer[player + 1][input]);
+			cout << endl;
+		}
+		transfer[player + 1][input] = -1;
+	}
+
+	checkPairs(transfer, numberPlayers); //checks pairs for all values
+
+}
+
+int main()
+{
+	bool playAgain = true;
+	do{
+
+	int deck[51]; //an array to represent all cards in a deck without one queen (old maid)
+	int deckCount = 0;
+	int numPlayers;
+	int playersCards[6][28]; //max number of players is 6, the 30 is just some number that is large enough to hold all card hands
+	
+	for(int i = 0; i < 6; i++) //fill array to have all zeros
+	{
+		for(int j = 0; j < 28; j++)
+		{
+			playersCards[i][j] = 0;
+		}
+	}
+	
+
+	for( int i = 1; i < 14; i++)     //These lines of code make a deck of 51 cards
+	{								 //Aces are 1s, twos are 2, threes are 3, .... , jacks are 11, kings are 12, queens are 13
+		if(i == 13)		//Queens are 13, there are only 3 of them
+		{
+			for(int j = 0; j < 3; j++)
+			{
+				deck[deckCount] = i;         
+				deckCount++;
+			} //end for				
+		}// end if 
+		else
+		{
+		for(int j = 0; j < 4; j++)
+		{
+			deck[deckCount] = i;              
+			deckCount++;
+		} //end for
+	} //end for  
+	}
+
+	shuffleDeck(deck); // calls function that shuffles the deck
+
+	cout << "How many players are playing in this game?" << endl << "(Please select a number from 2 - 6)  ";
+	cin >> numPlayers;
+	
+
+	deckCount = 0;                           //this algorithm allots the correct number of cards to the players
+	for(int j = 0; j < 51 ; j++)			// j condition really doesnt matter because below the cards will stop allocating when we run out of cards
+	{
+		for(int i = 0; i < numPlayers; i++) //fill out rows of multdimensional array based on how many players there are
+		{
+			if(deckCount < 51)
+			{
+			playersCards[i][j] = deck[deckCount]; //pass out card one at a time, going through each player
+			deckCount++;
+			}
+		}
+	}
+
+		checkPairs(playersCards, numPlayers);  //initial check for pairs, and the via this fuction each hand is reordered
+		
+		
+	bool userPlaying = true;
+	int cardSelection;
+
+	while(numPlayers > 1)
+	{
+	
+	for(int i = 0; i < numPlayers; i++)
+	{
+
+		if(i == 0 && userPlaying == true)
+		{
+			cout << endl << "You currently have these cards in your hand:" << endl;
+
+			for(int j = 0; playersCards[i][j] > 0; j++)
+				cardPrint(playersCards[i][j]);
+
+			cout << endl << "You get to draw a card from a hand containing " << handCount(playersCards, i + 1);
+			cout << endl << "Choose a number from 1 to " << handCount(playersCards, i + 1) << ":  ";
+			cin >> cardSelection;
+			cardSelection = cardSelection - 1;
+			cardTransfer(playersCards, i, cardSelection, numPlayers, userPlaying);
+	
+		}//end of if
+		else
+		{
+		cardSelection = rand() % handCount(playersCards, i +1);
+		cardTransfer(playersCards, i , cardSelection, numPlayers, userPlaying);
+		
+		}//end of else
+
+		for(int p = 0; p < numPlayers; p++)
+		{
+		if(playersCards[p][0] == -1)
+			removePlayer(playersCards, p, numPlayers, userPlaying);
+		}
+
+		/*for(int j = 0; playersCards[i][j] > 0; j++)
+		{
+		cout << playersCards[i][j] << ", ";                     //this code help check whether program was working
+		}
+		cout << endl;*/
+		
+		
+	}//end of for
+	//cout << "Num of players: " << numPlayers << endl << endl; //this code helped check whether program was working
+	}//end of while
+
+	if(userPlaying == true)
+	{
+		cout << endl << "You Lose! You're the only remaining player and you have the Old Maid!";
+	}
+
+	
+	char answer;
+
+	cout << endl << "Play another game (y/n)";
+	cin >> answer;
+
+	if(answer == 'n')
+		playAgain = false;
+
+	cout << endl;
+	
+	
+	}while(playAgain == true);
+	
+
+return 0;
+
+}//end main
