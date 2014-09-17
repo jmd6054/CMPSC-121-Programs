@@ -1,0 +1,724 @@
+@@ -0,0 +1,723 @@
+//John Michael DiDonato
+//Compsci 121 Section 2
+//Homework 6
+
+//Program Description:
+//the program simulates the game of hearts, a four player trick cards game
+//each play is dealt 13 cards from a shuffled deck
+//who has the two of clubs leads the first trick, each player plays one cards to the trick,
+//and the highest card who of the suit of the card which lead wins the trick
+//the happens 13 times and then the cards are reshuffled and alloted
+//a player gets points by winning tricks that have hearts(worth 1 points) or the queen of spades
+//which is worth 13 points. The game ends when a player reaches 100 points
+//the winner is the player with the fewest points
+//play restrictions are: one must follow suit when possible, but if you cant follow suit then play whatever
+//cards you want
+//also, a player cant lead with a heart unless a player has alredly discarded a heart or a player doesnt have
+//any cards in any other suits
+//if a player gets all 26 points in a single round then they lose that 26 points and all other players get them
+//
+
+#include <iostream>
+#include <iomanip>
+using namespace std;
+ 
+struct cardType
+{
+	int suit; //suit of card; will be from 1 - 4; 1- clubs, 2- diamonds, 3 - spades, 4 - hearts
+	char suitName[10]; //will be the name for suits
+	int rank; //rank of card; will be form 2-13; 2 -two, 3 - three, ... 11 - Jack, 12- Queen, 13 - king, 14 - Ace
+	char rankName[10]; //will be the name of the rank
+	bool playable;  //bool value to determine if card is playable
+	int inputNum;
+};
+
+ void shuffleDeck(cardType shuffle[])  //this function goes through each card in deck and randomly swaps positions with another card
+ {
+	for(int i = 0; i < 52; i++)
+	{
+		int randomPosition = rand() % 52;         
+		swap(shuffle[i], shuffle[randomPosition]);  
+	}
+ }
+
+struct playerType
+{
+	cardType hand[13];
+	bool two_of_clubs_check;
+	bool lead;
+	int playerNumber;
+	int totalScore;
+	int roundScore;
+	int trickScore;
+	bool lowestScore;
+
+};
+
+//checks which player has two of clubs
+void two_of_clubs(playerType playa[], int arrayPos, int &two_of_clubs_hand_position)
+{
+	playa[arrayPos].two_of_clubs_check = false; //orginally sets each player to have a false two_of_clubs_check
+
+	for(int j = 0; j < 13; j++) //goes through each cards in a players hand
+	{
+		if(playa[arrayPos].hand[j].suit == 1 && playa[arrayPos].hand[j].rank == 2) //if this critera is meet then that player has two fo clubs
+		{
+			playa[arrayPos].two_of_clubs_check = true; //the players has two of clubs so sets two_of_clubs_check to true for that player
+			two_of_clubs_hand_position = j;
+		}//end of if
+	} //end of for
+
+} //end of two_of_clubs
+
+//this function insures that the order of trick stays the same regardless of who leads
+//meaning that player 2 will always follow player 1 and player 1 will allows follow player 4 ect..
+void repostion_array_for_turn(playerType playas[], int leadNum)
+{
+	if(leadNum == 1)
+	{
+		swap(playas[0], playas[3]);
+		swap(playas[0], playas[1]);
+		swap(playas[1], playas[2]);
+	}
+
+	if(leadNum == 2)
+	{
+		swap(playas[0], playas[3]);
+		swap(playas[1], playas[2]);
+		swap(playas[0], playas[1]);
+		swap(playas[2], playas[3]);
+	}
+
+	if(leadNum == 3)
+	{
+		swap(playas[0], playas[3]);
+		swap(playas[2], playas[3]);
+		swap(playas[1], playas[2]);
+	}
+
+}
+struct trickType
+{
+	cardType trick;
+	bool highest;
+};
+
+//function used to check if check is a player has any cards left to play in the suit lead
+void suit_check(playerType player[],int playerNum, int suitLeadNum, bool &suit_Check)
+{
+	int suitCount = 0;
+	for(int j = 0; j < 13; j++)
+	{
+		if(player[playerNum].hand[j].playable == true && player[playerNum].hand[j].suit == suitLeadNum)
+			suitCount++;
+
+		if(suitCount > 0)
+			suit_Check = true;
+		else
+			suit_Check = false;
+	}
+
+}
+
+//function used to detemine if a player can lead with a heart or not, modifies a bool value that is passed through
+void heartLeadFunc(playerType player[], int player_array_pos, bool &heartLeadCheck)
+{
+	int clubsCount = 0;
+	int diamondsCount = 0;
+	int spadesCount = 0;
+
+	for(int j = 0; j < 13; j++)
+	{
+		if(player[player_array_pos].hand[j].suit == 1)
+			clubsCount++;
+		if(player[player_array_pos].hand[j].suit == 2)
+			diamondsCount++;
+		if(player[player_array_pos].hand[j].suit == 3)
+			spadesCount++;
+	}
+
+	if(clubsCount == 0 && diamondsCount == 0 && spadesCount == 0)
+		heartLeadCheck = true;
+	else
+		heartLeadCheck = false;
+
+}
+
+int main()
+{
+	const int ENDING_SCORE = 100; //score where game ends if a player meets it
+	cardType cards[52]; //array deck created from struct Card
+	playerType players[4]; //creates 4 players from playerType
+	trickType tricks[4]; //creates an array of trickType with a size of 4
+	int position;
+	int twoOfClubsHandPosition;
+	bool heartsBroken;
+	int input;
+	bool inputValid;
+	int suitLead;
+	bool still_cards_in_suit_lead;
+	bool heart_lead;
+	int cardPosition;
+	int randCardSelection;
+
+	bool keepPlaying = true;
+
+	cout << "The Game of Hearts" << endl << endl;
+
+	while(keepPlaying == true)
+	{
+	
+	bool gameOver = false;
+	for(int i = 0; i < 4; i++)
+	{
+		players[i].totalScore = 0;
+		players[i].roundScore = 0;
+		players[i].trickScore = 0;
+	}
+
+	do{
+	heartsBroken = false;
+	bool firstTrick = true;
+	
+	//Code Below is designed to create a full deck of cards
+	position = 0; //the card position in the deck array - will be from 0-51
+	for(int s = 1; s < 5; s++) //for statement to determine suit values
+	{
+		for(int r = 2; r < 15; r++)  //for statement to determine rank values
+		{
+			//code below is for setting the 
+			char *sn; //pointer must be used to keep sn modifiable 
+			sn = cards[position].suitName;
+
+			switch(s)   //switch statment for n to determine the proper suit name based on suit
+			{
+				case 1: strcpy(sn,"Clubs");
+					break;
+				case 2: strcpy(sn, "Diamonds");
+					break;
+				case 3: strcpy(sn, "Spades");
+					break;
+				case 4: strcpy(sn, "Hearts");
+			} //end of switch
+		
+			char *rn; //value that will be rankName; must be a point to keep modifiable 
+			rn = cards[position].rankName;
+
+			switch (r) //switch statemnt for r to determine proper rank name based on rank
+			{
+			case 2: strcpy(rn, "Two");
+				break;
+			case 3: strcpy(rn, "Three");
+				break;
+			case 4: strcpy(rn, "Four");
+				break;
+			case 5: strcpy(rn,"Five");
+				break;
+			case 6: strcpy(rn,"Six");
+				break;
+			case 7: strcpy(rn,"Seven");
+				break;
+			case 8: strcpy(rn,"Eight");
+				break;
+			case 9: strcpy(rn, "Nine");
+				break;
+			case 10: strcpy(rn, "Ten");
+				break;
+			case 11: strcpy(rn, "Jack");
+				break;
+			case 12: strcpy(rn, "Queen");
+				break;
+			case 13: strcpy(rn, "King");
+				break;
+			case 14: strcpy(rn, "Ace");
+			} //end of switch
+
+			cards[position].suit = s; //determines suit value for the particular card in the deck
+			cards[position].rank  = r;//determines rank value for the particular card in the deck 
+			cards[position].playable = true;
+			position++; //adds + 1 to the positon in the deck
+
+		}//end of inner for*/
+	}//end of outer for
+
+
+	shuffleDeck(cards); //calls function that shuffles deck of cards
+
+	//the code below fill in their hands of the 4 players from 13 cards from the deck just created
+	position = 0;
+	for(int i = 0; i < 4; i++)
+	{
+		players[i].playerNumber = i+1; //sets the player number of the player
+		//cout << "player number: " << i + 1 << endl;
+		for(int j = 0; j < 13; j ++)
+		{
+			players[i].hand[j] = cards[position];
+			players[i].hand[j].inputNum = j;
+			position++;
+		} //end of inner for
+		//cout << endl;
+	} //end of outer for
+
+	//used to help debug
+	/*for(int i = 0; i < 4; i++)
+	{
+		cout << "Player " << players[i].playerNumber << endl;
+		for(int j = 0; j < 13; j++)
+		{
+			cout << players[i].hand[j].rankName << "(" << players[i].hand[j].rank << ") of (" << players[i].hand[j].suit << ")" << players[i].hand[j].suitName;
+			cout << endl;
+	
+		}
+		cout << endl;
+	}
+	*/
+
+	//calls the function two_of_clubs for each player to find who has two of clubs
+	for(int i = 0; i < 4; i++)
+	{
+		two_of_clubs(players, i, twoOfClubsHandPosition);
+	}
+	
+	//if player has two of clubs they will lead, so thats players.lead will be set to true; if they dont have two of clubs then lead = false
+	for(int i = 0; i < 4; i++) 
+	{
+		if(players[i].two_of_clubs_check == true)
+		{
+			players[i].lead = true;
+			//cout << endl << "Lead position is " << i << endl;
+		}
+		else
+			players[i].lead = false; 
+	}
+
+
+	for(int trickNumber = 0; trickNumber < 13 && gameOver == false; trickNumber++)
+	{
+	//this code finds who player will lead is and reorder array to keep the trick order of players intact!
+	for(int i = 0; i < 4; i++)
+	{
+		if(players[i].lead == true)
+			repostion_array_for_turn(players, i);
+	}
+
+
+	//code for a single trick
+	for(int i = 0; i < 4; i++)
+	{
+		if(firstTrick == true)
+		{
+			cout << "Player " << players[i].playerNumber << " leads with the Two of Clubs" << endl;
+			tricks[i].trick = players[i].hand[twoOfClubsHandPosition];
+			players[i].hand[twoOfClubsHandPosition].playable = false;
+			suitLead = players[i].hand[twoOfClubsHandPosition].suit;
+			firstTrick = false;
+		} //end of initial if
+		else //of not the first trick of round
+		{
+			if(i == 0) //if the lead player
+			{
+				heartLeadFunc(players, i, heart_lead);  //checks to see if player can lead with heart
+
+			if(players[i].playerNumber == 1)
+			{
+			//output for user
+				for(int s = 1; s < 5; s++)
+				{
+					if(s == 1)
+						cout << setw(10) << "Clubs: ";
+					if(s == 2)
+						cout << setw(10) << "Diamonds: ";
+					if(s == 3)
+						cout << setw(10) << "Spades: ";
+					if(s == 4)
+						cout << setw(10) << "Hearts: ";
+					
+					for(int j = 0; j < 13; j++)
+					{
+						if(players[i].hand[j].suit == s && players[i].hand[j].playable == true)
+						{
+							cout << " " << players[i].hand[j].inputNum << "--" << players[i].hand[j].rankName << " ";
+						}
+					}//end of inner for
+					cout << endl;
+				}//end of for
+				
+				
+					cout << "Which card would you like to lead? (type the number)  ";
+			     	cin >> input;
+
+					do{//do while loop verfies that input accords to the rules
+					for(int j = 0; j < 13; j++) 
+					{
+						if(input == players[i].hand[j].inputNum)
+						cardPosition = j;
+					}
+					if(input > 12 || input < 0 || players[i].hand[cardPosition].playable == false) //validates number input
+					{
+						inputValid = false;
+						cout << "The number selected is not valid" << endl;
+						cout << "Please select another card. (type the number)  ";
+						cin >> input;
+					}
+					else
+					{
+					if(players[i].hand[cardPosition].suit != 4) //if card is not heart then true
+					{
+						inputValid = true;
+					}
+					else
+					{
+						if(heartsBroken == true) //if cards is heart but hearts broken the true
+							inputValid = true;
+						else
+						{
+							if(heart_lead == true) //if heart selected and heart lead is true then true
+							{
+								inputValid = true;
+								heartsBroken = true;
+							}
+							else
+							{
+								inputValid = false;
+								cout << "You cannot lead with a heart at this time" << endl;
+								cout << "Please select another card. (type the number)  ";
+								cin >> input;
+							}
+						}
+					} //end of else - suit number of card selected is 5
+					}
+				}while(inputValid == false);
+
+					//after input is verfied some values are changed
+				tricks[i].trick = players[i].hand[cardPosition]; //card selected becomes part of trick
+				suitLead = players[i].hand[cardPosition].suit; //suit lead changes
+				players[i].hand[cardPosition].playable = false; //card is used and cannot be used again
+			}//end of if to check if the first player in array was player 1 aka the user
+			else
+			{
+				do{
+				randCardSelection = rand() % 13;
+				if(players[i].hand[randCardSelection].playable == false)
+					inputValid = false;
+				else
+				{
+						if(players[i].hand[randCardSelection].suit != 4)
+						{
+						inputValid = true;
+						}
+						else
+					{
+						if(heartsBroken == true)
+							inputValid = true;
+						else
+						{
+							if(heart_lead == true)
+							{
+								inputValid = true;
+								heartsBroken = true;
+							}
+							else
+							{
+								inputValid = false;
+							}
+						}
+					} //end of else - suit number of card selected is 5
+				}
+				}while(inputValid == false);
+
+				//output is changed like before
+				cout << "Player " << players[i].playerNumber << " lead with a " << players[i].hand[randCardSelection].rankName << " of " << players[i].hand[randCardSelection].suitName << endl;
+				tricks[i].trick = players[i].hand[randCardSelection];
+				suitLead = players[i].hand[randCardSelection].suit;
+				players[i].hand[randCardSelection].playable = false;
+			} //end of else  - the first player in array was not player 1
+			}
+			else //if not the lead player
+			{
+				suit_check(players, i, suitLead, still_cards_in_suit_lead);
+
+				if(players[i].playerNumber == 1)
+				{
+			
+				for(int s = 1; s < 5; s++)
+				{
+					if(s == 1)
+						cout << setw(10) << "Clubs: ";
+					if(s == 2)
+						cout << setw(10) << "Diamonds: ";
+					if(s == 3)
+						cout << setw(10) << "Spades: ";
+					if(s == 4)
+						cout << setw(10) << "Hearts: ";
+					
+					for(int j = 0; j < 13; j++)
+					{
+						if(players[i].hand[j].suit == s && players[i].hand[j].playable == true)
+						{
+							cout << " " << players[i].hand[j].inputNum << "--" << players[i].hand[j].rankName << " ";
+						}
+					}//end of inner for
+					cout << endl;
+				}//end of for
+			
+				
+					cout << "Which card would you like to play? (type the number)  ";
+			     	cin >> input;
+
+					do{//do while verfifes input
+					for(int j = 0; j < 13; j++) 
+					{
+						if(input == players[i].hand[j].inputNum)
+						cardPosition = j;
+					}
+					if(input > 12 || input < 0 || players[i].hand[cardPosition].playable == false)
+					{
+						inputValid = false;
+						cout << "The number selected is not valid" << endl;
+						cout << "Please select another card. (type the number)  ";
+						cin >> input;
+					}
+					else
+					{
+					if(players[i].hand[cardPosition].suit == suitLead)
+						inputValid = true;
+					else
+					{
+					if (still_cards_in_suit_lead == true)
+						{
+							inputValid = false;
+							cout << "You must play a card that follows suit. (type the number) ";
+							cin >> input;
+						}
+					else
+						{
+							inputValid = true;
+							if(players[i].hand[cardPosition].suit == 4)
+							{
+								heartsBroken = true;
+							}
+						}
+					}
+					}
+			}while(inputValid == false);
+			
+				tricks[i].trick = players[i].hand[cardPosition];
+				players[i].hand[cardPosition].playable = false;
+		}//end of if to see if a following player is player 1
+			else
+			{
+				
+				do{
+				randCardSelection = rand() % 13;                             //randomly selects card fro 0-12
+				if(players[i].hand[randCardSelection].playable == false)     //if card selected is not playable then input is not valid
+					inputValid = false;
+				else
+				{
+					if(players[i].hand[randCardSelection].suit == suitLead)
+						inputValid = true;
+					else
+					{
+						if (still_cards_in_suit_lead == true)
+							inputValid = false;
+						else
+						{
+							inputValid = true;
+							if(players[i].hand[randCardSelection].suit == 4)
+							{
+								heartsBroken = true;
+							}
+						}
+					}
+				}
+				
+				}while(inputValid == false);
+
+				cout << "Player " << players[i].playerNumber << " played a " << players[i].hand[randCardSelection].rankName << " of " << players[i].hand[randCardSelection].suitName << endl;
+				tricks[i].trick = players[i].hand[randCardSelection];
+				players[i].hand[randCardSelection].playable = false;
+			}//end of else
+
+	}//end of else that determines it isnt the leading player that is up
+	}//end of else that determines it isnt the firsttrick
+	
+	}//end of trick for
+
+	//code determines which player won the trick
+	int highest_of_suit = tricks[0].trick.rank;
+	int winner;
+	for(int i = 0; i < 4; i++)
+	{
+		if(tricks[i].trick.suit == suitLead && tricks[i].trick.rank >= highest_of_suit)
+		{
+			highest_of_suit = tricks[i].trick.rank;
+			for(int j = 0; j < 4; j++)
+			{
+				if(j == i)
+				{
+					tricks[j].highest = true;
+					winner = j;
+
+				}
+				else
+					tricks[j].highest = false;
+			}
+		}
+	}
+
+	if(players[winner].playerNumber == 1)
+		cout << "You win the trick" << endl << endl;
+	else
+		cout << "Player " << players[winner].playerNumber << " wins the trick" << endl << endl;
+
+	//code below helped debug
+	/*cout << "Trick is: ";
+	for(int i = 0; i < 4; i++)
+	{
+		cout << tricks[i].trick.rankName << " of " << tricks[i].trick.suitName << ", ";
+	}
+	cout << endl;
+	*/
+	//this code counts how many points the winning player scored
+	for(int i = 0; i < 4; i++)
+	{
+		if(tricks[i].trick.suit == 4)
+			players[winner].trickScore = players[winner].trickScore + 1;
+
+		if(tricks[i].trick.suit == 3 && tricks[i].trick.rank == 12)
+			players[winner].trickScore = players[winner].trickScore + 13;
+	}
+
+	//adds round score tot total score for the winner
+	players[winner].roundScore = players[winner].roundScore + players[winner].trickScore;
+	
+	if((players[winner].totalScore + players[winner].roundScore) >= ENDING_SCORE)
+		gameOver = true;
+	
+	for(int i = 0; i < 4; i++)
+	{
+		players[i].trickScore = 0;
+	}
+
+	for(int i = 0; i < 4; i++)
+	{
+		players[i].lead = false;
+	}
+
+	players[winner].lead = true;
+
+	}//end of trick for statement
+	
+	for(int i = 0; i < 4; i++)
+	{
+		players[i].totalScore = players[i].totalScore + players[i].roundScore;
+	}
+
+	if(gameOver == false)
+	{
+
+	//code that sees if a player shoots the moon for a round
+	//if so that players total score decreases by 26 and all other players total score increases by 26
+	for(int i = 0; i < 4; i++)
+	{
+		if(players[i].roundScore == 26)
+		{
+			cout << "Player " << players[i].playerNumber << " Shoots the Moon" << endl;
+			for(int j = 0; j < 4; j++)
+			{
+				if(j == i)
+					players[j].totalScore = players[j].totalScore - 26;
+				else
+					players[j].totalScore = players[j].totalScore + 26;
+			}
+		}
+	}
+
+	for(int i = 0; i < 4; i++)
+	{
+		players[i].roundScore = 0; //reset round score to zero for a new round
+
+		if(players[i].totalScore >= ENDING_SCORE)
+			gameOver = true;
+	}
+
+	if(gameOver == false)
+	{
+	//display lastest scores for each player
+	cout << endl << "Updated scores: ";
+	for(int i = 0; i < 4; i++)
+	{
+		if (players[i].playerNumber == 1)
+		{
+			cout << "You: " << players[i].totalScore << "\t";
+		}
+		else
+		{
+			cout << "Player " << players[i].playerNumber << ": " << players[i].totalScore << "\t";
+		}
+	}
+	
+	cout << endl <<"Next hand!" << endl << endl;
+	}
+	}
+	if(gameOver == true) //so if gameOver == true;
+	{
+		cout << "The Game is Over!" << endl;
+
+		cout << endl << "Final scores: " << endl;
+		for(int i = 0; i < 4; i++)
+		{
+			if (players[i].playerNumber == 1)
+			{
+			cout << "You: " << players[i].totalScore << "\t";
+			}
+			else
+			{
+			cout << "Player " << players[i].playerNumber << ": " << players[i].totalScore << "\t";
+			}
+	}
+
+		//code below finds which player has lowest score
+		int low_score = players[0].totalScore;
+		for(int i = 0; i < 4; i++)
+		{
+			if(players[i].totalScore <= low_score)
+			{
+				for(int j = 0; j < 4; j++)
+				{
+					if(j == i)
+						players[j].lowestScore = true;
+					else
+						players[j].lowestScore = false;
+				}
+			}
+		}
+
+		for(int i = 0; i < 4; i++)
+		{
+			if(players[i].lowestScore == true)
+			{
+				if(players[i].playerNumber == 1)
+					cout << endl << "You won with the lowest score of " << players[i].totalScore << endl << endl;
+				else
+					cout << endl << "Player " << players[i].playerNumber << " won with the lowest score of " << players[i].totalScore << endl << endl;
+			}
+		}
+	
+	}
+	}while(gameOver == false);
+
+	char answer;
+	cout << "Would you like to play another game? (y/n)  ";
+	cin >> answer;
+
+	if(answer == 'n' || answer == 'N')
+	{
+		keepPlaying = false;
+	}
+
+	cout << endl;
+
+	}//end of while loop
+	return 0;
+}
